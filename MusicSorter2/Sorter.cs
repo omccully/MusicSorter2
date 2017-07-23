@@ -2,35 +2,117 @@
 using System.Windows.Forms;
 using System.IO;
 using System.Diagnostics;
+using Shell32;
 
 namespace MusicSorter2
 {
+    class FileChangedEventArgs : EventArgs
+    {
+        public string PathA { get; private set; }
+        public string PathB { get; private set; }
+
+        public FileChangedEventArgs(string PathA, string PathB)
+        {
+            this.PathA = PathA;
+            this.PathB = PathB;
+        }
+    }
+
+    class FolderCreatedEventArgs : EventArgs
+    {
+        public string Path { get; private set; }
+
+        public FolderCreatedEventArgs(string Path)
+        {
+            this.Path = Path;
+        }
+    }
+
     class Sorter
     {
-        public int TitleNum = -1;
-        public int ArtistNum = -1;
-        public int AlbumNum = -1;
-        public int ContribArtistsNum = -1;
-        public int TrackNum = -1;
-        public NameBuilder nameBuilder { get; set; }
-        public string RootPath { get; set; }
+        int TitleNum { get; set; }
+        int ArtistNum { get; set; }
+        int AlbumNum { get; set; }
+        int ContribArtistsNum { get; set; }
+        int TrackNum { get; set; }
 
-        public bool ShowMovedUpdates = false;
-        public bool ShowCreatedUpdates = false;
-        public bool ShowRenameUpdates = false;
+        NameBuilder Bob { get; set; }
+        string RootPath { get; set; }
 
-
-        /// <summary>
-        /// Prints s to console in given color
-        /// </summary>
-        /// <param name="s">String to be written to console</param>
-        /// <param name="cc">Color of the string written to console</param>
-        public static void logc(string s, ConsoleColor cc)
+        #region Events
+        public delegate void FileChangedEventHandler(object sender, FileChangedEventArgs e);
+        public event FileChangedEventHandler FileUnpacked;
+        protected virtual void OnFileUnpacked(FileChangedEventArgs e)
         {
-            Console.ForegroundColor = cc;
-            Console.Write(s);
-            Console.ResetColor();
+            FileUnpacked(this, e);
         }
+
+        public delegate void FolderCreatedEventHandler(object sender, FolderCreatedEventArgs e);
+        public event FolderCreatedEventHandler FolderCreated;
+        protected virtual void OnFolderCreated(FolderCreatedEventArgs e)
+        {
+            FolderCreated(this, e);
+        }
+
+        public event FileChangedEventHandler FileMoved;
+        protected virtual void OnFileMoved(FileChangedEventArgs e)
+        {
+            FileMoved(this, e);
+        }
+
+        public event FileChangedEventHandler FileRenamed;
+        protected virtual void OnFileRenamed(FileChangedEventArgs e)
+        {
+            FileRenamed(this, e);
+        }
+        #endregion
+
+        public Sorter(string RootPath, string FileNameFormat)
+        {
+            this.RootPath = RootPath;
+            TitleNum = ArtistNum = AlbumNum = ContribArtistsNum = TrackNum = -1;
+            Bob = new NameBuilder(FileNameFormat);
+
+            Shell shell = new Shell();
+            Folder fold = shell.NameSpace(RootPath);
+
+            // Loop through attribute names to find indexes for needed attributes
+            foreach (Shell32.FolderItem2 item in fold.Items())
+            {
+                for (int i = 0; i < short.MaxValue; i++)
+                {
+                    string header = fold.GetDetailsOf(null, i);
+                    if (String.IsNullOrEmpty(header))
+                        break;
+
+                    switch (header)
+                    {
+                        case "Title":
+                            TitleNum = i;
+                            break;
+                        case "Album artist":
+                        case "Artist":
+                        case "Authors":
+                            ArtistNum = i;
+                            break;
+                        case "Album Title":
+                        case "Album":
+                            AlbumNum = i;
+                            break;
+                        case "Contributing artists":
+                            ContribArtistsNum = i;
+                            break;
+                        case "#":
+                        case "Track Number":
+                            TrackNum = i;
+                            break;
+                    }
+                }
+                break;
+            }
+
+        }
+
 
         /// <summary>
         /// Removes wildcard characters from a file name or path string
@@ -53,8 +135,9 @@ namespace MusicSorter2
         /// Step 1: Moves files from folders inside dir and moves files to FolderBox.Text.
         /// </summary>
         /// <param name="dir">The folder path to start in. Uses recursion to access subfolders.</param>
-        public void UnpackAll(string dir)
+        public void UnpackAll(string dir=null)
         {
+            if (dir == null) dir = RootPath;
             foreach (string i in Directory.GetDirectories(dir))
             {
                 UnpackAll(i);
@@ -80,10 +163,8 @@ namespace MusicSorter2
 
                     File.Move(o, Path.Combine(RootPath, filename));
 
-                    if (ShowMovedUpdates)
-                    {
-                        Console.WriteLine("Moved " + o);
-                    }
+                    // Notify client of file change
+                    FileUnpacked(this, new FileChangedEventArgs(o, Path.Combine(RootPath, filename)));
                 }
                 Directory.Delete(i);
             }
@@ -92,11 +173,11 @@ namespace MusicSorter2
         /// <summary>
         /// Step 2: Makes folders and moves files into folders based on root\artist\album\song.mp3
         /// </summary>
-        /// <param name="dir">The root folder path</param>
-        public void MakeDirs(string dir, bool RenameFiles)
+        /// <param name="RenameFiles">If true, this method also does Step 3 (to improve efficiency)</param>
+        public void MakeDirs(bool RenameFiles)
         {
             Shell32.Shell shell = new Shell32.Shell();
-            Shell32.Folder objFolder = shell.NameSpace(dir);
+            Shell32.Folder objFolder = shell.NameSpace(RootPath);
 
             foreach (Shell32.FolderItem2 item in objFolder.Items())
             {
@@ -113,22 +194,23 @@ namespace MusicSorter2
                     Album = MakeLegal(temp, false);
                 }
 
-                temp = Path.Combine(Path.Combine(dir, Artist), Album);
+                temp = Path.Combine(Path.Combine(RootPath, Artist), Album);
                 if (!Directory.Exists(temp))
                 {
                     Directory.CreateDirectory(temp);
-                    if (ShowCreatedUpdates)
-                    {
-                        Console.WriteLine(temp + "\\ created");
-                    }
+                    FolderCreated(this, new FolderCreatedEventArgs(temp));
                 }
 
                 if (RenameFiles)
                 {
+                    // Do step 3's job more effiently while we're at it
                     FileName = GetNewFileName(temp, item, objFolder);
+                    // Perhaps add an event here?
                 }
 
+                // File moved
                 File.Move(item.Path, Path.Combine(temp, FileName));
+                FileMoved(this, new FileChangedEventArgs(item.Path, Path.Combine(temp, FileName)));
             }
         }
 
@@ -137,9 +219,10 @@ namespace MusicSorter2
         /// <summary>
         /// Step 3: Changes file names
         /// </summary>
-        /// <param name="dir">The folder path to start in. Uses recursion to access subfolders.</param>
-        public void NameChange(string dir)
+        /// <param name="dir">The folder path to start in. Subfolders are recursively accessed.</param>
+        public void NameChange(string dir=null)
         {
+            if (dir == null) dir = RootPath;
             Shell32.Shell shell = new Shell32.Shell();
             Shell32.Folder objFolder = shell.NameSpace(dir);
 
@@ -155,11 +238,12 @@ namespace MusicSorter2
                 if (item.Path != (NewPath = Path.Combine(dir, NewName)))
                 {
                     File.Move(item.Path, NewPath);
+                    FileRenamed(this, new FileChangedEventArgs(item.Path, NewPath));
                 }
             }
         }
 
-        public string GetNewFileName(string dir, Shell32.FolderItem2 item, Shell32.Folder objFolder)
+        string GetNewFileName(string dir, Shell32.FolderItem2 item, Shell32.Folder objFolder)
         {
             string FileName = Path.GetFileName(item.Path);
 
@@ -177,7 +261,7 @@ namespace MusicSorter2
             }
             else
             {
-                NewName = nameBuilder.Build(TrackNumber, Title, Album, Artist);
+                NewName = Bob.Build(TrackNumber, Title, Album, Artist);
             }
 
             string NewFileName = NewName + ext;
@@ -189,11 +273,7 @@ namespace MusicSorter2
                     Errors++;
                 }
             }
-            if (ShowRenameUpdates && FileName != NewFileName)
-            {
-                logc(FileName + " ==> " + NewFileName + "\n",
-                    Errors != 1 ? ConsoleColor.Yellow : ConsoleColor.Gray);
-            }
+
             return MakeLegal(NewFileName, false);
         }
 

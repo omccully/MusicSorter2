@@ -15,15 +15,12 @@ namespace MusicSorter2
         [DllImport("kernel32.dll", SetLastError = true)]
         static extern bool FreeConsole();
 
-        Sorter sorter = new Sorter();
-
         public MainForm()
         {
             InitializeComponent();
             ModeComboBox.SelectedIndex = 0;
             FormatComboBox.SelectedIndex = 0;
             ModeComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
-
         }
 
         private void BrowseBut_Click(object sender, EventArgs e)
@@ -44,100 +41,93 @@ namespace MusicSorter2
         {
             Stopwatch full = new Stopwatch();
             Stopwatch s = new Stopwatch();
-            sorter.nameBuilder = new NameBuilder(FormatComboBox.Text);
+            
             AllocConsole();
-            sorter.RootPath = FixFolderBox();
-            sorter.ShowMovedUpdates = MovedCheck.Checked;
-            sorter.ShowCreatedUpdates = CreatedCheck.Checked;
-            sorter.ShowRenameUpdates = RenameCheck.Checked;
-            Console.WriteLine("Finding extended file property IDs...");
+
             try
             {
-                Shell shell = new Shell();
-                Folder fold = shell.NameSpace(FolderBox.Text);
-
-                foreach (Shell32.FolderItem2 item in fold.Items())
+                //Console.WriteLine("Finding extended file property IDs...");
+                Sorter sorter = new Sorter(FixFolderBox(), FormatComboBox.Text);
+                if (MovedCheck.Checked) sorter.FileUnpacked += Sorter_FileUnpacked;
+                if (CreatedCheck.Checked)
                 {
-                    for (int i = 0; i < short.MaxValue; i++)
-                    {
-                        string header = fold.GetDetailsOf(null, i);
-                        if (String.IsNullOrEmpty(header))
-                            break;
-
-                        switch (header)
-                        {
-                            case "Title":
-                                sorter.TitleNum = i;
-                                Console.WriteLine("Title = " + i);
-                                break;
-                            case "Album artist":
-                            case "Artist":
-                                sorter.ArtistNum = i;
-                                Console.WriteLine("Artist = " + i);
-                                break;
-                            case "Album Title":
-                            case "Album":
-                                sorter.AlbumNum = i;
-                                Console.WriteLine("Album = " + i);
-                                break;
-                            case "Contributing artists":
-                                sorter.ContribArtistsNum = i;
-                                Console.WriteLine("Constributing artists = " + i);
-                                break;
-                            case "#":
-                            case "Track Number":
-                                sorter.TrackNum = i;
-                                Console.WriteLine("Track# = " + i);
-                                break;
-                        }
-                    }
-                    break;
+                    sorter.FolderCreated += Sorter_FolderCreated;
+                    sorter.FileMoved += Sorter_FileMoved;
                 }
-                Sorter.logc("Run at your own risk! Files may be renamed or lost.\n" + FolderBox.Text + " folder should not contain any files that you don't want moved! This folder should contain mostly audio files and folders.", ConsoleColor.Red);
+                if (RenameCheck.Checked) sorter.FileRenamed += Sorter_FileRenamed;
+
+                LogInColor("Run at your own risk!\n" + 
+                    "\t- Files may be renamed or lost.\n" + 
+                    "\t- " + FolderBox.Text + " folder should not contain any files that you don't want moved.\n" +
+                    "\t- You should make a backup of " + FolderBox.Text + " before proceeding.\n" + 
+                    "\t- " + FolderBox.Text + " should contain mostly audio files and folders.", ConsoleColor.Red);
+                Console.WriteLine();
                 Console.WriteLine("Press ENTER to continue.");
                 Console.ReadLine();
-
+                Console.WriteLine("Starting...");
                 full.Start();
 
                 if (ModeComboBox.SelectedIndex == 0 || ModeComboBox.SelectedIndex == 1)
                 {
-                    Sorter.logc("\nStarting step 1: Unpacking files\n", ConsoleColor.Green);
+                    LogInColor("\nStarting step 1: Unpacking files\n", ConsoleColor.Green);
                     s.Start();
-                    sorter.UnpackAll(FolderBox.Text);
+                    sorter.UnpackAll();
                     s.Stop();
-                    Sorter.logc("Completed step 1. " + s.ElapsedMilliseconds.ToString() + " ms\n", ConsoleColor.Green);
+                    LogInColor("Completed step 1. " + s.ElapsedMilliseconds + " ms\n", ConsoleColor.Green);
                 }
+                Console.Out.Flush();
                 if (ModeComboBox.SelectedIndex == 0 || ModeComboBox.SelectedIndex == 2)
                 {
                     s.Reset();
-                    Sorter.logc("\nStarting step 2: Making folders and moving files.\n", ConsoleColor.Green);
+                    LogInColor("\nStarting step 2: Making folders and moving files.\n", ConsoleColor.Green);
                     s.Start();
-                    sorter.MakeDirs(FolderBox.Text, ModeComboBox.SelectedIndex == 0);
+                    sorter.MakeDirs(ModeComboBox.SelectedIndex == 0);
                     s.Stop();
-                    Sorter.logc("Completed step 2. " + s.ElapsedMilliseconds.ToString() + " ms\n", ConsoleColor.Green);
+                    LogInColor("Completed step 2. " + s.ElapsedMilliseconds + " ms\n", ConsoleColor.Green);
                 }
                 else if (ModeComboBox.SelectedIndex == 3)
                 {
                     s.Reset();
-                    Sorter.logc("\nStarting step 3: Renaming files.\n", ConsoleColor.Green);
+                    LogInColor("\nStarting step 3: Renaming files.\n", ConsoleColor.Green);
                     s.Start();
-                    sorter.NameChange(FolderBox.Text);
+                    sorter.NameChange();
                     s.Stop();
-                    Sorter.logc("Completed step 3. " + s.ElapsedMilliseconds.ToString() + " ms\n", ConsoleColor.Green);
+                    LogInColor("Completed step 3. " + s.ElapsedMilliseconds + " ms\n", ConsoleColor.Green);
                 }
 
                 full.Stop();
 
-                Console.WriteLine("\nDone in " + full.ElapsedMilliseconds.ToString() + "ms. ");
+                Console.WriteLine("\nDone in " + full.ElapsedMilliseconds + "ms. ");
             }
             catch (Exception ex)
             {
-                Sorter.logc("An error has been caught. The sorter has been stopped. The error message is:\n" + ex.ToString(),
+                LogInColor("An error has been caught. The sorter has been stopped. The error message is:\n" + ex,
                     ConsoleColor.Red);
+                Console.WriteLine();
             }
             Console.WriteLine("Press ENTER to continue.");
             Console.ReadLine();
             FreeConsole();
+        }
+
+        private void Sorter_FileMoved(object sender, FileChangedEventArgs e)
+        {
+            Console.WriteLine("Moved " + e.PathA + " -> " + e.PathB);
+        }
+
+        void Sorter_FileUnpacked(object o, FileChangedEventArgs e)
+        {
+            Console.WriteLine("Unpacked " + e.PathA + " -> " + e.PathB);
+        }
+
+        private void Sorter_FileRenamed(object sender, FileChangedEventArgs e)
+        {
+            Console.WriteLine("Renamed " + e.PathA + " -> " + e.PathB);
+        }
+
+        private void Sorter_FolderCreated(object sender, FolderCreatedEventArgs e)
+        {
+            Console.WriteLine("Created " + e.Path);
         }
 
         private string FixFolderBox()
@@ -149,6 +139,18 @@ namespace MusicSorter2
                 FolderBox.Text += @"\";
             }
             return FolderBox.Text;
+        }
+
+        /// <summary>
+        /// Prints s to console in given color
+        /// </summary>
+        /// <param name="s">String to be written to console</param>
+        /// <param name="cc">Color of the string written to console</param>
+        public static void LogInColor(string s, ConsoleColor cc)
+        {
+            Console.ForegroundColor = cc;
+            Console.Write(s);
+            Console.ResetColor();
         }
     }
 }
