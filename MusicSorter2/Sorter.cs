@@ -30,7 +30,7 @@ namespace MusicSorter2
 
     class Sorter
     {
-        // The indexes for each of the file attributes
+        // The indexes for each of the file properties
         // These indexes may change depending on the operating system
         int TitleNum { get; set; }
         int ArtistNum { get; set; }
@@ -78,7 +78,7 @@ namespace MusicSorter2
             Shell shell = new Shell();
             Folder fold = shell.NameSpace(RootPath);
 
-            // Loop through attribute names to find indexes for needed attributes
+            // Loop through property names to find indexes for needed properties
             foreach (Shell32.FolderItem2 item in fold.Items())
             {
                 for (int i = 0; i < short.MaxValue; i++)
@@ -186,7 +186,7 @@ namespace MusicSorter2
             Folder objFolder = shell.NameSpace(RootPath);
 
             // Loop through all files in RootPath
-            // move files into RootPath/<artist>/<album>/ based on each file's attributes
+            // move files into RootPath/<artist>/<album>/ based on each file's properties
             // create directories when necessary
             foreach (FolderItem2 item in objFolder.Items())
             {

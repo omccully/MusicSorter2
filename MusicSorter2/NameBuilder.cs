@@ -13,54 +13,54 @@ namespace MusicSorter2
     /// </summary>
     class NameBuilder
     {
-        class SongAttribute
+        class SongProperty
         {
-            public string AttributeName { get; private set; }
-            public string AttributeTag { get; private set; }
+            public string PropertyName { get; private set; }
+            public string PropertyTag { get; private set; }
 
-            public SongAttribute(string AttributeName, string AttributeTag)
+            public SongProperty(string PropertyName, string PropertyTag)
             {
-                this.AttributeName = AttributeName;
-                this.AttributeTag = AttributeTag;
+                this.PropertyName = PropertyName;
+                this.PropertyTag = PropertyTag;
             }
         }
 
-        static class SongAttributeCollection
+        static class SongPropertyCollection
         {
-            public static readonly SongAttribute[] SongAttributes = {
-                new SongAttribute("TRACK_NUMBER", "#"),
-                new SongAttribute("SONG_TITLE", "T"),
-                new SongAttribute("ALBUM", "AL"),
-                new SongAttribute("ARTIST", "AR")
+            public static readonly SongProperty[] SongProperties = {
+                new SongProperty("TRACK_NUMBER", "#"),
+                new SongProperty("SONG_TITLE", "T"),
+                new SongProperty("ALBUM", "AL"),
+                new SongProperty("ARTIST", "AR")
             };
 
-            public static int IndexOf(SongAttribute sa_needle)
+            public static int IndexOf(SongProperty sa_needle)
             {
-                for(int i = 0; i < SongAttributes.Length; i++)
+                for(int i = 0; i < SongProperties.Length; i++)
                 {
-                    if (SongAttributes[i] == sa_needle) return i;
+                    if (SongProperties[i] == sa_needle) return i;
                 }
-                throw new Exception("sa_needle not in SongAttributeCollection");
+                throw new Exception("sp_needle not in SongPropertyCollection");
             }
 
-            public static SongAttribute SongAttributeFromTag(string tag)
+            public static SongProperty SongPropertyFromTag(string tag)
             {
                 tag = tag.Replace("{", "").Replace("}", "");
-                foreach(SongAttribute sa in SongAttributes)
+                foreach(SongProperty sa in SongProperties)
                 {
-                    if(sa.AttributeTag == tag) return sa;
+                    if(sa.PropertyTag == tag) return sa;
                 }
                 throw new Exception("Invalid tag");
             }
 
             /// <summary>
-            /// Array of song attribute tags
+            /// Array of song property tags
             /// </summary>
             public static string[] Tags
             {
                 get
                 {
-                    return SongAttributes.Select(attr => attr.AttributeTag).ToArray();
+                    return SongProperties.Select(attr => attr.PropertyTag).ToArray();
                 }
             }
 
@@ -71,7 +71,7 @@ namespace MusicSorter2
             {
                 get
                 {
-                    // map SongAttributeTags so elements have escaped curly braces
+                    // map song property tags so elements have escaped curly braces
                     IEnumerable<string> tagged = Tags.Select(s => "\\{" + s + "\\}");
 
                     // regex OR between tags
@@ -87,19 +87,19 @@ namespace MusicSorter2
          * The resultant file names are built like this using the values passed to Build:
          * Text[0] + valueof(Tags[0]) + Text[1] + valueof(Tags[1]) ... valueof(Tags[n-1]) + Text[n]
          */
-        SongAttribute[] Tags { get; set; }
+        SongProperty[] Tags { get; set; }
         string[] Text { get; set; }
 
         public NameBuilder(string Format)
         {
-            Regex r = SongAttributeCollection.TagsRegex;
+            Regex r = SongPropertyCollection.TagsRegex;
 
             // Get array of non-tag text in Format
             this.Text = r.Split(Format); 
 
-            // Get array of SongAttribute objects in order in which they appear in Format
+            // Get array of SongProperty objects in order in which they appear in Format
             this.Tags = r.Matches(Format).Cast<Match>().Select(
-                m => SongAttributeCollection.SongAttributeFromTag(m.Value)).ToArray();
+                m => SongPropertyCollection.SongPropertyFromTag(m.Value)).ToArray();
         }
 
         /// <summary>
@@ -112,16 +112,16 @@ namespace MusicSorter2
         /// <returns></returns>
         public string Build(string Number, string Title, string Album, string Artist)
         {
-            string[] attrib_vals = { Number, Title, Album, Artist };
+            string[] prop_vals = { Number, Title, Album, Artist };
 
             StringBuilder bob = new StringBuilder(Text[0]);
             for (int i = 0; i < Tags.Length; i++)
             {
-                for (int j = 0; j < SongAttributeCollection.SongAttributes.Length; j++)
+                for (int j = 0; j < SongPropertyCollection.SongProperties.Length; j++)
                 {
-                    if(Tags[i] == SongAttributeCollection.SongAttributes[j])
+                    if(Tags[i] == SongPropertyCollection.SongProperties[j])
                     {
-                        bob.Append(attrib_vals[j]);
+                        bob.Append(prop_vals[j]);
                         break;
                     }
                 }
