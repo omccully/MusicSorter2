@@ -30,6 +30,8 @@ namespace MusicSorter2
 
     class Sorter
     {
+        // The indexes for each of the file attributes
+        // These indexes may change depending on the operating system
         int TitleNum { get; set; }
         int ArtistNum { get; set; }
         int AlbumNum { get; set; }
@@ -132,26 +134,28 @@ namespace MusicSorter2
         }
 
         /// <summary>
-        /// Step 1: Moves files from folders inside dir and moves files to FolderBox.Text.
+        /// Step 1: Moves files inside dir and moves files to RootPath.
         /// </summary>
         /// <param name="dir">The folder path to start in. Uses recursion to access subfolders.</param>
         public void UnpackAll(string dir=null)
         {
             if (dir == null) dir = RootPath;
-            foreach (string i in Directory.GetDirectories(dir))
+            foreach (string d in Directory.GetDirectories(dir))
             {
-                UnpackAll(i);
-                foreach (string o in Directory.GetFiles(i))
+                UnpackAll(d); // recursively unpack this subdirectory
+                foreach (string f in Directory.GetFiles(d))
                 {
-                    string filename = Path.GetFileName(o);
+                    string filename = Path.GetFileName(f);
 
                     if (File.Exists(Path.Combine(RootPath, filename)))
                     {
-                        filename = Path.GetFileNameWithoutExtension(o);
-                        string ext = Path.GetExtension(o);
+                        // a file with this name already exists in RootPath
+                        filename = Path.GetFileNameWithoutExtension(f);
+                        string ext = Path.GetExtension(f);
                         string errorsuffix = "";
                         int errors = 1;
 
+                        // add a number at the end of the file name until no other file with this name exists
                         do
                         {
                             errors++;
@@ -161,12 +165,14 @@ namespace MusicSorter2
                         filename += errorsuffix + ext;
                     }
 
-                    File.Move(o, Path.Combine(RootPath, filename));
+                    // move file f to the RootPath directory
+                    File.Move(f, Path.Combine(RootPath, filename));
 
                     // Notify client of file change
-                    FileUnpacked(this, new FileChangedEventArgs(o, Path.Combine(RootPath, filename)));
+                    FileUnpacked(this, new FileChangedEventArgs(f, Path.Combine(RootPath, filename)));
                 }
-                Directory.Delete(i);
+
+                Directory.Delete(d); // directory should be empty now, so delete it
             }
         }
 
@@ -176,10 +182,13 @@ namespace MusicSorter2
         /// <param name="RenameFiles">If true, this method also does Step 3 (to improve efficiency)</param>
         public void MakeDirs(bool RenameFiles)
         {
-            Shell32.Shell shell = new Shell32.Shell();
-            Shell32.Folder objFolder = shell.NameSpace(RootPath);
+            Shell shell = new Shell();
+            Folder objFolder = shell.NameSpace(RootPath);
 
-            foreach (Shell32.FolderItem2 item in objFolder.Items())
+            // Loop through all files in RootPath
+            // move files into RootPath/<artist>/<album>/ based on each file's attributes
+            // create directories when necessary
+            foreach (FolderItem2 item in objFolder.Items())
             {
                 if (item.IsFolder) continue;
 
@@ -187,7 +196,7 @@ namespace MusicSorter2
                 string Artist = GetArtist(objFolder, item);
                 string Album = "unknown";
 
-                //14 Album
+                // Album
                 string temp = objFolder.GetDetailsOf(item, this.AlbumNum);
                 if (temp != "")
                 {
@@ -217,16 +226,16 @@ namespace MusicSorter2
 
 
         /// <summary>
-        /// Step 3: Changes file names
+        /// Step 3: Changes file names of all 
         /// </summary>
         /// <param name="dir">The folder path to start in. Subfolders are recursively accessed.</param>
         public void NameChange(string dir=null)
         {
             if (dir == null) dir = RootPath;
-            Shell32.Shell shell = new Shell32.Shell();
-            Shell32.Folder objFolder = shell.NameSpace(dir);
+            Shell shell = new Shell();
+            Folder objFolder = shell.NameSpace(dir);
 
-            foreach (Shell32.FolderItem2 item in objFolder.Items())
+            foreach (FolderItem2 item in objFolder.Items())
             {
                 if (item.IsFolder)
                 {
@@ -268,6 +277,8 @@ namespace MusicSorter2
 
             if (File.Exists(Path.Combine(dir, NewFileName)))
             {
+                // a file with this name already exists in dir
+                // append an integer to the end of the file name until it's unique
                 while (File.Exists(Path.Combine(dir, (NewFileName = NewName + Errors.ToString() + ext))))
                 {
                     Errors++;
@@ -279,7 +290,7 @@ namespace MusicSorter2
 
         public string GetArtist(Shell32.Folder objFolder, Shell32.FolderItem2 item)
         {
-            //216 Album artist
+            // Album artist
             string temp = objFolder.GetDetailsOf(item, this.ArtistNum);
             if (temp != "")
             {
@@ -287,7 +298,7 @@ namespace MusicSorter2
             }
             else if (this.ContribArtistsNum != -1)
             {
-                //13 Contributing artists, uses this if (Album artist == "")
+                // Contributing artists, uses this if (Album artist == "")
                 temp = objFolder.GetDetailsOf(item, this.ContribArtistsNum);
                 if (temp != "")
                 {
