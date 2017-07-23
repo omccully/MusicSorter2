@@ -74,46 +74,9 @@ namespace MusicSorter2
             this.RootPath = RootPath;
             TitleNum = ArtistNum = AlbumNum = ContribArtistsNum = TrackNum = -1;
             Bob = new NameBuilder(FileNameFormat);
-
-            Shell shell = new Shell();
-            Folder fold = shell.NameSpace(RootPath);
-
-            // Loop through property names to find indexes for needed properties
-            foreach (Shell32.FolderItem2 item in fold.Items())
-            {
-                for (int i = 0; i < short.MaxValue; i++)
-                {
-                    string header = fold.GetDetailsOf(null, i);
-                    if (String.IsNullOrEmpty(header))
-                        break;
-
-                    switch (header)
-                    {
-                        case "Title":
-                            TitleNum = i;
-                            break;
-                        case "Album artist":
-                        case "Artist":
-                        case "Authors":
-                            ArtistNum = i;
-                            break;
-                        case "Album Title":
-                        case "Album":
-                            AlbumNum = i;
-                            break;
-                        case "Contributing artists":
-                            ContribArtistsNum = i;
-                            break;
-                        case "#":
-                        case "Track Number":
-                            TrackNum = i;
-                            break;
-                    }
-                }
-                break;
-            }
-
         }
+
+        
 
 
         /// <summary>
@@ -182,28 +145,19 @@ namespace MusicSorter2
         /// <param name="RenameFiles">If true, this method also does Step 3 (to improve efficiency)</param>
         public void MakeDirs(bool RenameFiles)
         {
-            Shell shell = new Shell();
-            Folder objFolder = shell.NameSpace(RootPath);
+            FilePropertiesReader directory_reader = new FilePropertiesReader(RootPath);
 
             // Loop through all files in RootPath
             // move files into RootPath/<artist>/<album>/ based on each file's properties
             // create directories when necessary
-            foreach (FolderItem2 item in objFolder.Items())
+            foreach (FileProperties fp in directory_reader.GetFiles())
             {
-                if (item.IsFolder) continue;
+                string FileName = Path.GetFileName(fp.Path);
+                string Artist = MakeLegal(Unknownify(fp.AnyArtist), false);
+                string Album = MakeLegal(Unknownify(fp.Album), false);
 
-                string FileName = Path.GetFileName(item.Path);
-                string Artist = GetArtist(objFolder, item);
-                string Album = "unknown";
-
-                // Album
-                string temp = objFolder.GetDetailsOf(item, this.AlbumNum);
-                if (temp != "")
-                {
-                    Album = MakeLegal(temp, false);
-                }
-
-                temp = Path.Combine(Path.Combine(RootPath, Artist), Album);
+               
+                string temp = Path.Combine(Path.Combine(RootPath, Artist), Album);
                 if (!Directory.Exists(temp))
                 {
                     Directory.CreateDirectory(temp);
@@ -213,17 +167,15 @@ namespace MusicSorter2
                 if (RenameFiles)
                 {
                     // Do step 3's job more effiently while we're at it
-                    FileName = GetNewFileName(temp, item, objFolder);
+                    FileName = GetNewFileName(temp, fp);
                     // Perhaps add an event here?
                 }
 
                 // File moved
-                File.Move(item.Path, Path.Combine(temp, FileName));
-                FileMoved(this, new FileChangedEventArgs(item.Path, Path.Combine(temp, FileName)));
+                File.Move(fp.Path, Path.Combine(temp, FileName));
+                FileMoved(this, new FileChangedEventArgs(fp.Path, Path.Combine(temp, FileName)));
             }
         }
-
-
 
         /// <summary>
         /// Step 3: Changes file names of all 
@@ -232,80 +184,61 @@ namespace MusicSorter2
         public void NameChange(string dir=null)
         {
             if (dir == null) dir = RootPath;
-            Shell shell = new Shell();
-            Folder objFolder = shell.NameSpace(dir);
 
-            foreach (FolderItem2 item in objFolder.Items())
+            FilePropertiesReader directory_reader = new FilePropertiesReader(dir);
+
+            // Loop through 
+            foreach (FileProperties fp in directory_reader.GetFilesAndDirectories())
             {
-                if (item.IsFolder)
+                if (fp.IsDirectory)
                 {
-                    NameChange(item.Path);
+                    NameChange(fp.Path);
                     continue;
                 }
-                string NewName = GetNewFileName(dir, item, objFolder);
+                string NewName = GetNewFileName(dir, fp);
                 string NewPath;
-                if (item.Path != (NewPath = Path.Combine(dir, NewName)))
+                if (fp.Path != (NewPath = Path.Combine(dir, NewName)))
                 {
-                    File.Move(item.Path, NewPath);
-                    FileRenamed(this, new FileChangedEventArgs(item.Path, NewPath));
+                    // if the name is actually different, change it
+                    File.Move(fp.Path, NewPath);
+                    FileRenamed(this, new FileChangedEventArgs(fp.Path, NewPath));
                 }
             }
         }
 
-        string GetNewFileName(string dir, Shell32.FolderItem2 item, Shell32.Folder objFolder)
+        string GetNewFileName(string dir, FileProperties fp)
         {
-            string FileName = Path.GetFileName(item.Path);
-
+            string FileName = Path.GetFileName(fp.Path);
             string ext = Path.GetExtension(FileName);
-            string Title = MakeLegal(objFolder.GetDetailsOf(item, this.TitleNum), false);
-            string Album = MakeLegal(objFolder.GetDetailsOf(item, this.AlbumNum), false);
-            string Artist = GetArtist(objFolder, item);
-            string TrackNumber = MakeLegal(objFolder.GetDetailsOf(item, this.TrackNum), false);
-            int Errors = 1;
             string NewName;
 
-            if (TrackNumber == "" || Title == "" || Album == "" || Artist == "")
+            if (fp.TrackNumber == "" || fp.Title == "" || 
+                fp.Album == "" || fp.AnyArtist == "")
             {
                 NewName = Path.GetFileNameWithoutExtension(FileName);
-            }
-            else
+            } else
             {
-                NewName = Bob.Build(TrackNumber, Title, Album, Artist);
+                NewName = Bob.Build(fp.TrackNumber, fp.Title, fp.Album, fp.AnyArtist);
             }
 
             string NewFileName = NewName + ext;
-
+            
             if (File.Exists(Path.Combine(dir, NewFileName)))
             {
+                int errors = 1;
                 // a file with this name already exists in dir
                 // append an integer to the end of the file name until it's unique
-                while (File.Exists(Path.Combine(dir, (NewFileName = NewName + Errors.ToString() + ext))))
+                while (File.Exists(Path.Combine(dir, (NewFileName = NewName + errors.ToString() + ext))))
                 {
-                    Errors++;
+                    errors++;
                 }
             }
-
             return MakeLegal(NewFileName, false);
         }
 
-        public string GetArtist(Shell32.Folder objFolder, Shell32.FolderItem2 item)
+        static string Unknownify(string prop_val)
         {
-            // Album artist
-            string temp = objFolder.GetDetailsOf(item, this.ArtistNum);
-            if (temp != "")
-            {
-                return MakeLegal(temp, false);
-            }
-            else if (this.ContribArtistsNum != -1)
-            {
-                // Contributing artists, uses this if (Album artist == "")
-                temp = objFolder.GetDetailsOf(item, this.ContribArtistsNum);
-                if (temp != "")
-                {
-                    return MakeLegal(temp, false);
-                }
-            }
-            return "unknown";
+            return String.IsNullOrEmpty(prop_val) ? "unknown" : prop_val;
         }
     }
 }
