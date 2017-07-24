@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Windows.Forms;
 using System.IO;
+using System.Text;
+using System.Globalization;
 using System.Diagnostics;
+using System.Linq;
 using Shell32;
+
 
 namespace MusicSorter2
 {
@@ -74,26 +78,6 @@ namespace MusicSorter2
             this.RootPath = RootPath;
             TitleNum = ArtistNum = AlbumNum = ContribArtistsNum = TrackNum = -1;
             Bob = new NameBuilder(FileNameFormat);
-        }
-
-        
-
-
-        /// <summary>
-        /// Removes wildcard characters from a file name or path string
-        /// </summary>
-        /// <param name="s">File name or path string</param>
-        /// <param name="IsPath">Set true if is a path</param>
-        /// <returns>String without wildcard characters</returns>
-        public static string MakeLegal(string s, bool IsPath)
-        {
-            string Result = s.Replace("*", "").
-                Replace("?", "").Replace("\"", "").
-                Replace("<", "").Replace(">", "").
-                Replace("|", "");
-
-            return IsPath ? Result : Result.Replace(@"\", "").
-                Replace("/", "").Replace(":", "");
         }
 
         /// <summary>
@@ -221,8 +205,8 @@ namespace MusicSorter2
                 NewName = Bob.Build(fp.TrackNumber, fp.Title, fp.Album, fp.AnyArtist);
             }
 
-            string NewFileName = NewName + ext;
-            
+            string NewFileName = MakeLegal(NewName + ext);
+
             if (File.Exists(Path.Combine(dir, NewFileName)))
             {
                 int errors = 1;
@@ -233,12 +217,45 @@ namespace MusicSorter2
                     errors++;
                 }
             }
-            return MakeLegal(NewFileName, false);
+            return NewFileName;
         }
 
+        #region Static Helper Methods
         static string Unknownify(string prop_val)
         {
             return String.IsNullOrEmpty(prop_val) ? "unknown" : prop_val;
         }
+
+        /// <summary>
+        /// Removes diacritics from a string.
+        /// </summary>
+        /// <param name="text">A string that may or may not contain diacritics</param>
+        /// <returns></returns>
+        static string RemoveDiacritics(string text)
+        {
+            // text.Normalize(NormalizationForm.FormD) splits accented character into 2 chars
+            return new string(text.Normalize(NormalizationForm.FormD).ToCharArray().Where(c =>
+                // removes the 2nd char, leaving the base character in the string
+                CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark
+            ).ToArray<char>()).Normalize(NormalizationForm.FormC);
+        }
+
+        /// <summary>
+        /// Removes wildcard characters from a file name or path string
+        /// </summary>
+        /// <param name="s">File name or path string</param>
+        /// <param name="IsPath">Set true if s is a path</param>
+        /// <returns>String without wildcard characters</returns>
+        public static string MakeLegal(string s, bool IsPath = false)
+        {
+            string Result = RemoveDiacritics(s).Replace("*", "").
+                Replace("?", "").Replace("\"", "").
+                Replace("<", "").Replace(">", "").
+                Replace("|", "");
+
+            return IsPath ? Result : Result.Replace(@"\", "").
+                Replace("/", "").Replace(":", "");
+        }
+        #endregion
     }
 }
