@@ -103,7 +103,7 @@ namespace MusicSorter2
         }
 
         /// <summary>
-        /// Builds a song name with the format specified by the object and the arguments passed. 
+        /// Builds a file name with the format specified by the object and the arguments passed. 
         /// </summary>
         /// <param name="Number"></param>
         /// <param name="Title"></param>
