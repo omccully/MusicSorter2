@@ -61,6 +61,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FileProperties.cs" />
     <Compile Include="FilePropertiesReader.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
