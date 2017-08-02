@@ -65,6 +65,7 @@
     <Compile Include="FileProperties.cs" />
     <Compile Include="FilePropertiesReader.cs" />
     <Compile Include="FolderCreatedEventArgs.cs" />
+    <Compile Include="Helpers.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>

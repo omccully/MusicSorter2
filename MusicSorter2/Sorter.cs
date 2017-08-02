@@ -156,83 +156,71 @@ namespace MusicSorter2
                     NameChange(fp.Path);
                     continue;
                 }
-                string NewName = GetNewFileName(dir, fp);
-                string NewPath;
-                if (fp.Path != (NewPath = Path.Combine(dir, NewName)))
+                string NewFileName = BuildNewFileNameFromProperties(fp);
+                
+                if (Path.GetFileName(fp.Path) != NewFileName)
                 {
+                    string NewPath = GetAvailableFilePath(dir, NewFileName);
                     // if the name is actually different, change it
                     File.Move(fp.Path, NewPath);
-                    FileRenamed(this, new FileChangedEventArgs(fp.Path, NewPath));
+                    FileRenamed?.Invoke(this, new FileChangedEventArgs(fp.Path, NewPath));
                 }
             }
         }
 
-        string GetNewFileName(string dir, FileProperties fp)
+
+        /// <summary>
+        /// Determine the new name for the file based on the format
+        /// and FileProperties <paramref name="fp"/>
+        /// </summary>
+        /// <param name="fp">Properties for the file</param>
+        /// <returns></returns>
+        string BuildNewFileNameFromProperties(FileProperties fp)
         {
             string FileName = Path.GetFileName(fp.Path);
             string ext = Path.GetExtension(FileName);
-            string NewName;
 
-            if (fp.TrackNumber == "" || fp.Title == "" || 
-                fp.Album == "" || fp.AnyArtist == "")
+            if ((Bob.RequiresTag("#") && fp.TrackNumber == "") ||
+                (Bob.RequiresTag("T") && fp.Title == "") ||
+                (Bob.RequiresTag("AL") && fp.Album == "") ||
+                (Bob.RequiresTag("AR") && fp.AnyArtist == ""))
             {
-                NewName = Path.GetFileNameWithoutExtension(FileName);
-            } else
-            {
-                NewName = Bob.Build(fp.TrackNumber, fp.Title, fp.Album, fp.AnyArtist);
+                // if the NameBuilder requires any properties that do
+                // not have values for this file, don't change the name.
+                return FileName;
             }
 
-            string NewFileName = MakeLegal(NewName + ext);
-
-            if (File.Exists(Path.Combine(dir, NewFileName)))
-            {
-                int errors = 1;
-                // a file with this name already exists in dir
-                // append an integer to the end of the file name until it's unique
-                while (File.Exists(Path.Combine(dir, (NewFileName = NewName + errors.ToString() + ext))))
-                {
-                    errors++;
-                }
-            }
-            return NewFileName;
-        }
-
-        #region Static Helper Methods
-        static string Unknownify(string prop_val)
-        {
-            return String.IsNullOrEmpty(prop_val) ? "unknown" : prop_val;
+            string NewName = Bob.Build(fp.TrackNumber, fp.Title, fp.Album, fp.AnyArtist);
+            return (NewName + ext).MakeLegalPath();
         }
 
         /// <summary>
-        /// Removes diacritics from a string.
+        /// Gets a file name generated from <paramref name="path"/> is not already taken. 
+        /// If <paramref name="path"/> is already taken, then an integer is appended to 
+        /// the file before the extension. 
         /// </summary>
-        /// <param name="text">A string that may or may not contain diacritics</param>
+        /// <param name="path">Path for desired file name</param>
+        /// <returns>Path to an avaialble file name in the same directory as 
+        /// <paramref name="filepath"/></returns>
+        string GetAvailableFilePath(string filepath)
+        {
+            return GetAvailableFilePath(Path.GetDirectoryName(filepath),
+                Path.GetFileName(filepath));
+        }
+
+        /// <summary>
+        /// Gets a file name generated from <paramref name="path"/> is not already taken. 
+        /// If <paramref name="path"/> is already taken, then an integer is appended to 
+        /// the file before the extension. 
+        /// </summary>
+        /// <param name="dir">Path to look in</param>
+        /// <param name="filename">Desired file name</param>
         /// <returns></returns>
-        static string RemoveDiacritics(string text)
+        string GetAvailableFilePath(string dir, string filename)
         {
-            // text.Normalize(NormalizationForm.FormD) splits accented character into 2 chars
-            return new string(text.Normalize(NormalizationForm.FormD).ToCharArray().Where(c =>
-                // removes the 2nd char, leaving the base character in the string
-                CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark
-            ).ToArray<char>()).Normalize(NormalizationForm.FormC);
         }
 
-        /// <summary>
-        /// Removes wildcard characters from a file name or path string
-        /// </summary>
-        /// <param name="s">File name or path string</param>
-        /// <param name="IsPath">Set true if s is a path</param>
-        /// <returns>String without wildcard characters</returns>
-        public static string MakeLegal(string s, bool IsPath = false)
         {
-            string Result = RemoveDiacritics(s).Replace("*", "").
-                Replace("?", "").Replace("\"", "").
-                Replace("<", "").Replace(">", "").
-                Replace("|", "");
-
-            return IsPath ? Result : Result.Replace(@"\", "").
-                Replace("/", "").Replace(":", "");
         }
-        #endregion
     }
 }

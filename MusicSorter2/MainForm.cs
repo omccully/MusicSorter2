@@ -132,7 +132,7 @@ namespace MusicSorter2
 
         private string FixFolderBox()
         {
-            FolderBox.Text = Sorter.MakeLegal(FolderBox.Text.Replace("/", @"\"), true);
+            FolderBox.Text = FolderBox.Text.Replace("/", @"\").MakeLegalPath(true);
 
             if (!FolderBox.Text.EndsWith(@"\"))
             {
