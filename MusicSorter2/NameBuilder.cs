@@ -11,7 +11,7 @@ namespace MusicSorter2
     /// A NameBuilder object with a certain format needs to be constructed once, and subsequent calls to
     /// the Build method are much faster than it would be to use the Format string each time. 
     /// </summary>
-    class NameBuilder
+    public class NameBuilder
     {
         class SongProperty
         {
@@ -103,7 +103,8 @@ namespace MusicSorter2
         }
 
         /// <summary>
-        /// Builds a file name with the format specified by the object and the arguments passed. 
+        /// Builds a string with the format specified by the object and the arguments passed. 
+        /// This method does not check arguments for 
         /// </summary>
         /// <param name="Number"></param>
         /// <param name="Title"></param>
@@ -129,6 +130,22 @@ namespace MusicSorter2
                 bob.Append(Text[i + 1]);
             }
             return bob.ToString();
+        }
+
+        public override string ToString()
+        {
+            StringBuilder bob = new StringBuilder(Text[0]);
+            for (int i = 0; i < Tags.Length; i++)
+            {
+                bob.Append("{" + Tags[i].PropertyTag + "}");
+                bob.Append(Text[i + 1]);
+            }
+            return bob.ToString();
+        }
+
+        public bool RequiresTag(string tag)
+        {
+            return Tags.Count(t => t.PropertyTag == tag) != 0;
         }
     }
 }
