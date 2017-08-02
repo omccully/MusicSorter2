@@ -104,7 +104,7 @@ namespace MusicSorter2
         /// Step 2: Makes folders and moves files into folders based on root\artist\album\song.mp3
         /// </summary>
         /// <param name="RenameFiles">If true, this method also does Step 3 (to improve efficiency)</param>
-        public void MakeDirs(bool RenameFiles)
+        public void PackAll(bool RenameFiles)
         {
             FilePropertiesReader directory_reader = new FilePropertiesReader(RootPath);
 

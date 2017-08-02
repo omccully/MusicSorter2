@@ -81,7 +81,7 @@ namespace MusicSorter2
                     s.Reset();
                     LogInColor("\nStarting step 2: Making folders and moving files.\n", ConsoleColor.Green);
                     s.Start();
-                    sorter.MakeDirs(ModeComboBox.SelectedIndex == 0);
+                    sorter.PackAll(ModeComboBox.SelectedIndex == 0);
                     s.Stop();
                     LogInColor("Completed step 2. " + s.ElapsedMilliseconds + " ms\n", ConsoleColor.Green);
                 }
