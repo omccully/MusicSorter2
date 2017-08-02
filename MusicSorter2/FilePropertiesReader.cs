@@ -7,17 +7,31 @@ using System.IO;
 
 namespace MusicSorter2
 {
-    class FilePropertiesReader
+    public class FilePropertiesReader
     {
         static readonly Shell shell = new Shell();
         Folder folder { get; set; }
+        bool UseRelativePaths { get; set; }
 
         public FilePropertiesReader(string directory)
         {
-            this.folder = shell.NameSpace(directory);
+            string directory_absolute_path;
+            this.UseRelativePaths = !Path.IsPathRooted(directory);
+            if (this.UseRelativePaths)
+            {
+                directory_absolute_path = Path.GetFullPath(directory);
+            }
+            else
+            {
+                directory_absolute_path = directory;
+            }
+            
+            // shell.NameSpace requires absolute path
+            this.folder = shell.NameSpace(directory_absolute_path);
+
             if (this.folder == null)
             {
-                throw new DirectoryNotFoundException();
+                throw new DirectoryNotFoundException($"Directory not found. {directory_absolute_path}");
             }
         }
 
@@ -29,7 +43,7 @@ namespace MusicSorter2
             {
                 if (!item.IsFolder)
                 {
-                    result.Add(new FileProperties(folder, item));
+                    result.Add(new FileProperties(folder, item, UseRelativePaths));
                 }
             }
 
@@ -42,7 +56,7 @@ namespace MusicSorter2
 
             foreach (FolderItem2 item in folder.Items())
             {
-                result.Add(new FileProperties(folder, item));
+                result.Add(new FileProperties(folder, item, UseRelativePaths));
             }
 
             return result;

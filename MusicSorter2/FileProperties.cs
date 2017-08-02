@@ -7,20 +7,22 @@ using System.IO;
 
 namespace MusicSorter2
 {
-    class NotInitializedException : Exception
+    public class NotInitializedException : Exception
     {
 
     }
 
-    class FileProperties
+    public class FileProperties
     {
         Folder folder { get; set; }
         FolderItem2 item { get; set; }
+        bool UseRelativePaths { get; set; }
 
-        public FileProperties(Folder folder, FolderItem2 item)
+        public FileProperties(Folder folder, FolderItem2 item, bool UseRelativePaths = false)
         {
             this.folder = folder;
             this.item = item;
+            this.UseRelativePaths = UseRelativePaths;
             if (!FilePropertiesMetadata.Initialized)
                 FilePropertiesMetadata.Initialize(folder);
         }
@@ -30,11 +32,21 @@ namespace MusicSorter2
             return folder.GetDetailsOf(item, i);
         }
 
+        /// <summary>
+        /// The path to the file
+        /// </summary>
         public string Path
         {
             get
             {
-                return item.Path;
+                if(UseRelativePaths)
+                {
+                    return Helpers.GetRelativePath(Directory.GetCurrentDirectory(), item.Path);
+                } else
+                {
+                    return item.Path;
+                }
+                
             }
         }
 
@@ -96,6 +108,11 @@ namespace MusicSorter2
                 }
                 return ContributingArtists;
             }
+        }
+
+        public override string ToString()
+        {
+            return Path;
         }
 
         static class FilePropertiesMetadata
@@ -191,5 +208,4 @@ namespace MusicSorter2
             }
         } // end class FilePropertiesMetadata
     } // end class FileProperties
-    
 }
