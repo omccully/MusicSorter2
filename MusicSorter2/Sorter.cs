@@ -10,6 +10,7 @@ using Shell32;
 
 namespace MusicSorter2
 {
+    public class Sorter
     {
         // The indexes for each of the file properties
         // These indexes may change depending on the operating system
@@ -61,7 +62,7 @@ namespace MusicSorter2
         /// Step 1: Moves files inside dir and moves files to RootPath.
         /// </summary>
         /// <param name="dir">The folder path to start in. Uses recursion to access subfolders.</param>
-        public void UnpackAll(string dir=null)
+        public void UnpackAll(string dir = null)
         {
             if (dir == null) dir = RootPath;
             foreach (string d in Directory.GetDirectories(dir))
@@ -70,30 +71,14 @@ namespace MusicSorter2
                 foreach (string f in Directory.GetFiles(d))
                 {
                     string filename = Path.GetFileName(f);
-
-                    if (File.Exists(Path.Combine(RootPath, filename)))
-                    {
-                        // a file with this name already exists in RootPath
-                        filename = Path.GetFileNameWithoutExtension(f);
-                        string ext = Path.GetExtension(f);
-                        string errorsuffix = "";
-                        int errors = 1;
-
-                        // add a number at the end of the file name until no other file with this name exists
-                        do
-                        {
-                            errors++;
-                            errorsuffix = errors.ToString();
-                        } while (File.Exists(Path.Combine(RootPath, filename + errorsuffix + ext)));
-
-                        filename += errorsuffix + ext;
-                    }
+                    string filepath = GetAvailableFilePath(RootPath, filename);
 
                     // move file f to the RootPath directory
-                    File.Move(f, Path.Combine(RootPath, filename));
+                    File.Move(f, filepath);
 
                     // Notify client of file change
-                    FileUnpacked(this, new FileChangedEventArgs(f, Path.Combine(RootPath, filename)));
+
+                    FileUnpacked?.Invoke(this, new FileChangedEventArgs(f, filepath));
                 }
 
                 Directory.Delete(d); // directory should be empty now, so delete it
@@ -114,27 +99,35 @@ namespace MusicSorter2
             foreach (FileProperties fp in directory_reader.GetFiles())
             {
                 string FileName = Path.GetFileName(fp.Path);
-                string Artist = MakeLegal(Unknownify(fp.AnyArtist), false);
-                string Album = MakeLegal(Unknownify(fp.Album), false);
+                string Artist = Unknownify(fp.AnyArtist).MakeLegalPath(false);
+                string Album = Unknownify(fp.Album).MakeLegalPath(false);
 
-               
-                string temp = Path.Combine(Path.Combine(RootPath, Artist), Album);
-                if (!Directory.Exists(temp))
+                string ArtistDir = Path.Combine(RootPath, Artist);
+                string ArtistAlbumDir = Path.Combine(ArtistDir, Album);
+                if (!Directory.Exists(ArtistAlbumDir))
                 {
-                    Directory.CreateDirectory(temp);
-                    FolderCreated(this, new FolderCreatedEventArgs(temp));
+                    if (!Directory.Exists(ArtistDir))
+                    {
+                        // creating ArtistAlbumDir automatically creates ArtistDir
+                        FolderCreated?.Invoke(this, new FolderCreatedEventArgs(ArtistDir));
+                    }
+                    Directory.CreateDirectory(ArtistAlbumDir);
+
+                    FolderCreated?.Invoke(this, new FolderCreatedEventArgs(ArtistAlbumDir));
                 }
 
                 if (RenameFiles)
                 {
                     // Do step 3's job more effiently while we're at it
-                    FileName = GetNewFileName(temp, fp);
+                    FileName = BuildNewFileNameFromProperties(fp);
                     // Perhaps add an event here?
                 }
 
                 // File moved
-                File.Move(fp.Path, Path.Combine(temp, FileName));
-                FileMoved(this, new FileChangedEventArgs(fp.Path, Path.Combine(temp, FileName)));
+                string new_path = GetAvailableFilePath(ArtistAlbumDir, FileName);
+                File.Move(fp.Path, new_path);
+
+                FileMoved?.Invoke(this, new FileChangedEventArgs(fp.Path, new_path));
             }
         }
 
@@ -142,7 +135,7 @@ namespace MusicSorter2
         /// Step 3: Changes file names of all 
         /// </summary>
         /// <param name="dir">The folder path to start in. Subfolders are recursively accessed.</param>
-        public void NameChange(string dir=null)
+        public void NameChange(string dir = null)
         {
             if (dir == null) dir = RootPath;
 
@@ -218,9 +211,27 @@ namespace MusicSorter2
         /// <returns></returns>
         string GetAvailableFilePath(string dir, string filename)
         {
+            string filepath = Path.Combine(dir, filename);
+            if (!File.Exists(filepath)) return filepath;
+            string filename_noext = Path.GetFileNameWithoutExtension(filename);
+            string ext = Path.GetExtension(filename);
+            string errorsuffix, new_filepath;
+            int errors = 0;
+
+            // add a number at the end of the file name until no other file with this name exists
+            do
+            {
+                errors++;
+                errorsuffix = errors.ToString();
+                new_filepath = Path.Combine(dir, filename_noext + errorsuffix + ext);
+            } while (File.Exists(new_filepath));
+
+            return new_filepath;
         }
 
+        static string Unknownify(string prop_val)
         {
+            return String.IsNullOrEmpty(prop_val) ? "unknown" : prop_val;
         }
     }
 }
