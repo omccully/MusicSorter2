@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Linq;
 using Shell32;
 
-
 namespace MusicSorter2
 {
     public class Sorter
@@ -28,26 +27,26 @@ namespace MusicSorter2
         public event FileChangedEventHandler FileUnpacked;
         protected virtual void OnFileUnpacked(FileChangedEventArgs e)
         {
-            FileUnpacked(this, e);
+            FileUnpacked?.Invoke(this, e);
         }
 
         public delegate void FolderCreatedEventHandler(object sender, FolderCreatedEventArgs e);
         public event FolderCreatedEventHandler FolderCreated;
         protected virtual void OnFolderCreated(FolderCreatedEventArgs e)
         {
-            FolderCreated(this, e);
+            FolderCreated?.Invoke(this, e);
         }
 
         public event FileChangedEventHandler FileMoved;
         protected virtual void OnFileMoved(FileChangedEventArgs e)
         {
-            FileMoved(this, e);
+            FileMoved?.Invoke(this, e);
         }
 
         public event FileChangedEventHandler FileRenamed;
         protected virtual void OnFileRenamed(FileChangedEventArgs e)
         {
-            FileRenamed(this, e);
+            FileRenamed?.Invoke(this, e);
         }
         #endregion
 
@@ -78,7 +77,7 @@ namespace MusicSorter2
 
                     // Notify client of file change
 
-                    FileUnpacked?.Invoke(this, new FileChangedEventArgs(f, filepath));
+                    OnFileUnpacked(new FileChangedEventArgs(f, filepath));
                 }
 
                 Directory.Delete(d); // directory should be empty now, so delete it
@@ -109,11 +108,11 @@ namespace MusicSorter2
                     if (!Directory.Exists(ArtistDir))
                     {
                         // creating ArtistAlbumDir automatically creates ArtistDir
-                        FolderCreated?.Invoke(this, new FolderCreatedEventArgs(ArtistDir));
+                        OnFolderCreated(new FolderCreatedEventArgs(ArtistDir));
                     }
                     Directory.CreateDirectory(ArtistAlbumDir);
 
-                    FolderCreated?.Invoke(this, new FolderCreatedEventArgs(ArtistAlbumDir));
+                    OnFolderCreated(new FolderCreatedEventArgs(ArtistAlbumDir));
                 }
 
                 if (RenameFiles)
@@ -127,7 +126,7 @@ namespace MusicSorter2
                 string new_path = GetAvailableFilePath(ArtistAlbumDir, FileName);
                 File.Move(fp.Path, new_path);
 
-                FileMoved?.Invoke(this, new FileChangedEventArgs(fp.Path, new_path));
+                OnFileMoved(new FileChangedEventArgs(fp.Path, new_path));
             }
         }
 
@@ -156,7 +155,7 @@ namespace MusicSorter2
                     string NewPath = GetAvailableFilePath(dir, NewFileName);
                     // if the name is actually different, change it
                     File.Move(fp.Path, NewPath);
-                    FileRenamed?.Invoke(this, new FileChangedEventArgs(fp.Path, NewPath));
+                    OnFileRenamed(new FileChangedEventArgs(fp.Path, NewPath));
                 }
             }
         }
