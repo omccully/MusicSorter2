@@ -10,29 +10,6 @@ using Shell32;
 
 namespace MusicSorter2
 {
-    class FileChangedEventArgs : EventArgs
-    {
-        public string PathA { get; private set; }
-        public string PathB { get; private set; }
-
-        public FileChangedEventArgs(string PathA, string PathB)
-        {
-            this.PathA = PathA;
-            this.PathB = PathB;
-        }
-    }
-
-    class FolderCreatedEventArgs : EventArgs
-    {
-        public string Path { get; private set; }
-
-        public FolderCreatedEventArgs(string Path)
-        {
-            this.Path = Path;
-        }
-    }
-
-    class Sorter
     {
         // The indexes for each of the file properties
         // These indexes may change depending on the operating system

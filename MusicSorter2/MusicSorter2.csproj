@@ -61,8 +61,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FileChangedEventArgs.cs" />
     <Compile Include="FileProperties.cs" />
     <Compile Include="FilePropertiesReader.cs" />
+    <Compile Include="FolderCreatedEventArgs.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
