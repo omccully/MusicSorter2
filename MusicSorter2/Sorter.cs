@@ -11,14 +11,6 @@ namespace MusicSorter2
 {
     public class Sorter
     {
-        // The indexes for each of the file properties
-        // These indexes may change depending on the operating system
-        int TitleNum { get; set; }
-        int ArtistNum { get; set; }
-        int AlbumNum { get; set; }
-        int ContribArtistsNum { get; set; }
-        int TrackNum { get; set; }
-
         NameBuilder Bob { get; set; }
         string RootPath { get; set; }
 
@@ -53,7 +45,6 @@ namespace MusicSorter2
         public Sorter(string RootPath, string FileNameFormat)
         {
             this.RootPath = RootPath;
-            TitleNum = ArtistNum = AlbumNum = ContribArtistsNum = TrackNum = -1;
             Bob = new NameBuilder(FileNameFormat);
         }
 
