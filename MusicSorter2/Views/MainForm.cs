@@ -51,6 +51,16 @@ namespace MusicSorter2
             fnf.ShowDialog();
         }
 
+        void ExecuteStep(int step_num, string step_description, Action step_action)
+        {
+            Stopwatch step_time = new Stopwatch();
+            LogInColor($"\nStarting step {step_num}: {step_description}\n", ConsoleColor.Green);
+            step_time.Start();
+            step_action.Invoke();
+            step_time.Stop();
+            LogInColor($"Completed step {step_num}. {step_time.ElapsedMilliseconds} ms\n", ConsoleColor.Green);
+        }
+
         private void StartBut_Click(object sender, EventArgs e)
         {
             Stopwatch full_time = new Stopwatch();
@@ -84,30 +94,28 @@ namespace MusicSorter2
 
                 if (SelectedSorterMode == SorterMode.Full || SelectedSorterMode == SorterMode.Unpack)
                 {
-                    LogInColor("\nStarting step 1: Unpacking files\n", ConsoleColor.Green);
-                    step_time.Start();
-                    sorter.UnpackAll();
-                    step_time.Stop();
-                    LogInColor("Completed step 1. " + step_time.ElapsedMilliseconds + " ms\n", ConsoleColor.Green);
+                    ExecuteStep(1, "Unpacking files", delegate
+                    {
+                        sorter.UnpackAll();
+                    });
                 }
                 Console.Out.Flush();
                 if (SelectedSorterMode == SorterMode.Full || SelectedSorterMode == SorterMode.Move)
                 {
-                    step_time.Reset();
-                    LogInColor("\nStarting step 2: Making folders and moving files.\n", ConsoleColor.Green);
-                    step_time.Start();
-                    sorter.PackAll(ModeComboBox.SelectedIndex == 0);
-                    step_time.Stop();
-                    LogInColor("Completed step 2. " + step_time.ElapsedMilliseconds + " ms\n", ConsoleColor.Green);
+                    ExecuteStep(2, "Making folders and moving files", delegate
+                    {
+                        // rename files during PackAll if we're doing a full sort
+                        sorter.PackAll(SelectedSorterMode == SorterMode.Full);
+                    });
                 }
                 else if (SelectedSorterMode == SorterMode.Rename)
                 {
-                    step_time.Reset();
-                    LogInColor("\nStarting step 3: Renaming files.\n", ConsoleColor.Green);
-                    step_time.Start();
-                    sorter.NameChange();
-                    step_time.Stop();
-                    LogInColor("Completed step 3. " + step_time.ElapsedMilliseconds + " ms\n", ConsoleColor.Green);
+                    // This step isn't necessary when doing a Full sort because
+                    // step 2 renames the files (for performance reasons)
+                    ExecuteStep(3, "Renaming files", delegate
+                    {
+                        sorter.NameChange();
+                    });
                 }
 
                 full_time.Stop();
