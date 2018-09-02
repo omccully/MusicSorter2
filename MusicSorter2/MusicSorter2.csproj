@@ -70,6 +70,8 @@
     <Compile Include="Sorter\FileChangedEventArgs.cs" />
     <Compile Include="Sorter\FileProperties.cs" />
     <Compile Include="Sorter\Interfaces\IFilePropertiesFormatter.cs" />
+    <Compile Include="Sorter\Interfaces\UserSettings.cs" />
+    <Compile Include="Sorter\RegistrySettings.cs" />
     <Compile Include="Sorter\SongFileNameFormatter.cs" />
     <Compile Include="Sorter\FilePropertiesReader.cs" />
     <Compile Include="Sorter\FolderCreatedEventArgs.cs" />

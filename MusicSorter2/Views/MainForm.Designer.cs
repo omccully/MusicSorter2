@@ -67,7 +67,7 @@
             // 
             this.FolderLabel.AutoSize = true;
             this.FolderLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.FolderLabel.Location = new System.Drawing.Point(66, 17);
+            this.FolderLabel.Location = new System.Drawing.Point(66, 15);
             this.FolderLabel.Name = "FolderLabel";
             this.FolderLabel.Size = new System.Drawing.Size(50, 16);
             this.FolderLabel.TabIndex = 2;

@@ -11,9 +11,11 @@ namespace MusicSorter2
         [STAThread]
         static void Main()
         {
+            RegistrySettings settings = new RegistrySettings("MusicSorter");
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainForm());
+            Application.Run(new MainForm(settings));
         }
     }
 }

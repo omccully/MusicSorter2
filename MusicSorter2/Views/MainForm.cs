@@ -28,13 +28,63 @@ namespace MusicSorter2
             }
         }
 
-        public MainForm()
+        UserSettings Settings;
+
+        public MainForm(UserSettings settings)
         {
             FreeConsole();
             InitializeComponent();
             ModeComboBox.DataSource = Enum.GetValues(typeof(SorterMode));
-            FormatComboBox.SelectedIndex = 0;
+            
             ModeComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+
+            try
+            {
+                InitializeFromSettings(settings);
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show("Failed to restore from settings" + Environment.NewLine +
+                    e.ToString());
+            }
+        }
+
+        const string FolderBoxSettingKey = "DefaultSortRootFolder";
+        const string FormatComboBoxSettingKey = "DefaultSongNameFormatter";
+        const string RenameNotificationKey = "RenameNotificationKey";
+        const string CreatedNotificationKey = "CreatedNotificationKey";
+        const string MovedNotificationKey = "MovedNotificationKey";
+        void InitializeFromSettings(UserSettings settings)
+        {
+            this.Settings = settings;
+
+            FolderBox.Text = settings.GetValue(FolderBoxSettingKey, "").ToString();
+
+            string formatter = settings.GetValue(FormatComboBoxSettingKey, "").ToString();
+            if(String.IsNullOrWhiteSpace(formatter))
+            {
+                FormatComboBox.SelectedIndex = 0;
+            }
+            else
+            {
+                FormatComboBox.Text = formatter;
+            }
+
+
+
+            RenameCheck.Checked = settings.GetBoolean(RenameNotificationKey, false);
+            CreatedCheck.Checked = settings.GetBoolean(CreatedNotificationKey, false);
+            MovedCheck.Checked = settings.GetBoolean(MovedNotificationKey, false);
+        }
+
+
+        void SaveStateToSettings(UserSettings settings)
+        {
+            settings.SetValue(FolderBoxSettingKey, FolderBox.Text);
+            settings.SetValue(FormatComboBoxSettingKey, FormatComboBox.Text);
+            settings.SetValue(RenameNotificationKey, RenameCheck.Checked);
+            settings.SetValue(CreatedNotificationKey, CreatedCheck.Checked);
+            settings.SetValue(MovedNotificationKey, MovedCheck.Checked);
         }
 
         private void BrowseBut_Click(object sender, EventArgs e)
@@ -63,8 +113,9 @@ namespace MusicSorter2
 
         private void StartBut_Click(object sender, EventArgs e)
         {
+            SaveStateToSettings(Settings);
+
             Stopwatch full_time = new Stopwatch();
-            Stopwatch step_time = new Stopwatch();
 
             AllocConsole();
 
