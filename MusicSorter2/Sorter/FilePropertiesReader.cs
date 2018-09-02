@@ -9,12 +9,14 @@ namespace MusicSorter2
 {
     public class FilePropertiesReader
     {
-        static readonly Shell shell = new Shell();
+        static Shell shell = null;
         Folder folder { get; set; }
         bool UseRelativePaths { get; set; }
 
         public FilePropertiesReader(string directory)
         {
+            if (shell == null) shell = new Shell();
+
             string directory_absolute_path;
             this.UseRelativePaths = !Path.IsPathRooted(directory);
             if (this.UseRelativePaths)
