@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Diagnostics;
 using Shell32;
+using System.IO;
 
 namespace MusicSorter2
 {
@@ -113,6 +114,13 @@ namespace MusicSorter2
 
         private void StartBut_Click(object sender, EventArgs e)
         {
+            FixFolderBox();
+            if (!Directory.Exists(FolderBox.Text))
+            {
+                MessageBox.Show($"The directory {FolderBox.Text} does not exist");
+                return;
+            }
+
             SaveStateToSettings(Settings);
 
             Stopwatch full_time = new Stopwatch();
@@ -121,7 +129,7 @@ namespace MusicSorter2
 
             try
             {
-                Sorter sorter = new Sorter(FixFolderBox(), new SongFileNameFormatter(FormatComboBox.Text));
+                Sorter sorter = new Sorter(FolderBox.Text, new SongFileNameFormatter(FormatComboBox.Text));
                 if (MovedCheck.Checked) sorter.FileUnpacked += Sorter_FileUnpacked;
                 if (CreatedCheck.Checked)
                 {
