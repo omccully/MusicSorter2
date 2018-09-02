@@ -47,7 +47,7 @@ namespace MusicSorter2
             try
             {
                 //Console.WriteLine("Finding extended file property IDs...");
-                Sorter sorter = new Sorter(FixFolderBox(), FormatComboBox.Text);
+                Sorter sorter = new Sorter(FixFolderBox(), new SongFileNameFormatter(FormatComboBox.Text));
                 if (MovedCheck.Checked) sorter.FileUnpacked += Sorter_FileUnpacked;
                 if (CreatedCheck.Checked)
                 {

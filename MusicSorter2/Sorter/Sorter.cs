@@ -11,7 +11,7 @@ namespace MusicSorter2
 {
     public class Sorter
     {
-        NameBuilder Bob { get; set; }
+        IFilePropertiesFormatter PropertiesFormatter;
         string RootPath { get; set; }
 
         #region Events
@@ -42,10 +42,10 @@ namespace MusicSorter2
         }
         #endregion
 
-        public Sorter(string RootPath, string FileNameFormat)
+        public Sorter(string RootPath, IFilePropertiesFormatter PropertiesFormatter)
         {
             this.RootPath = RootPath;
-            Bob = new NameBuilder(FileNameFormat);
+            this.PropertiesFormatter = PropertiesFormatter;
         }
 
         /// <summary>
@@ -109,7 +109,7 @@ namespace MusicSorter2
                 if (RenameFiles)
                 {
                     // Do step 3's job more effiently while we're at it
-                    FileName = BuildNewFileNameFromProperties(fp);
+                    FileName = PropertiesFormatter.Format(fp);
                     // Perhaps add an event here?
                 }
 
@@ -139,7 +139,7 @@ namespace MusicSorter2
                     NameChange(fp.Path);
                     continue;
                 }
-                string NewFileName = BuildNewFileNameFromProperties(fp);
+                string NewFileName = PropertiesFormatter.Format(fp);
                 
                 if (Path.GetFileName(fp.Path) != NewFileName)
                 {
@@ -151,31 +151,6 @@ namespace MusicSorter2
             }
         }
 
-
-        /// <summary>
-        /// Determine the new name for the file based on the format
-        /// and FileProperties <paramref name="fp"/>
-        /// </summary>
-        /// <param name="fp">Properties for the file</param>
-        /// <returns></returns>
-        string BuildNewFileNameFromProperties(FileProperties fp)
-        {
-            string FileName = Path.GetFileName(fp.Path);
-            string ext = Path.GetExtension(FileName);
-
-            if ((Bob.RequiresTag("#") && fp.TrackNumber == "") ||
-                (Bob.RequiresTag("T") && fp.Title == "") ||
-                (Bob.RequiresTag("AL") && fp.Album == "") ||
-                (Bob.RequiresTag("AR") && fp.AnyArtist == ""))
-            {
-                // if the NameBuilder requires any properties that do
-                // not have values for this file, don't change the name.
-                return FileName;
-            }
-
-            string NewName = Bob.Build(fp.TrackNumber, fp.Title, fp.Album, fp.AnyArtist);
-            return (NewName + ext).MakeLegalPath();
-        }
 
         /// <summary>
         /// Gets a file name generated from <paramref name="path"/> is not already taken. 

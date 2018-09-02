@@ -35,7 +35,7 @@ namespace MusicSorterTest
         /// <param name="RootPath">RootPath must contain TestFile1.mp3 and TestFile2.mp3</param>
         void TestUnpack(string RootPath)
         {
-            Sorter sorter = new Sorter(RootPath, "{#}. {T}");
+            Sorter sorter = new Sorter(RootPath, new SongFileNameFormatter("{#}. {T}"));
 
             string File1SourcePath = Path.Combine(RootPath, @"TestFolder2\subfolder\TestFile1.mp3");
             string File2SourcePath = Path.Combine(RootPath, @"TestFolder\TestFile2.mp3");
@@ -122,7 +122,7 @@ namespace MusicSorterTest
 
         void TestPack(string RootPath, bool Rename=false)
         {
-            Sorter sorter = new Sorter(RootPath, "{#}. {T}");
+            Sorter sorter = new Sorter(RootPath, new SongFileNameFormatter("{#}. {T}"));
 
             string File1SourcePath = Path.Combine(RootPath, "TestFile1.mp3");
             string File1DestinationFolder1 = Path.Combine(RootPath, "omccully");
@@ -194,7 +194,7 @@ namespace MusicSorterTest
 
         public void TestRename(string RootPath)
         {
-            Sorter sorter = new Sorter(RootPath, "{#}. {T}");
+            Sorter sorter = new Sorter(RootPath, new SongFileNameFormatter("{#}. {T}"));
 
             string File1Before = Path.Combine(RootPath, @"TestFolder1\TestFile1.mp3");
             string File1After = Path.Combine(RootPath, @"TestFolder1\1. Silence.mp3");
