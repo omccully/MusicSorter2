@@ -9,16 +9,21 @@ namespace MusicSorter2
 {
     public class SongFileNameFormatter : IFilePropertiesFormatter
     {
-        NameBuilder Bob;
+        public const string TrackNumberTag = "#";
+        public const string TitleTag = "T";
+        public const string AlbumTag = "AL";
+        public const string ArtistTag = "AR";
 
-        public SongFileNameFormatter(NameBuilder bob)
+        DictionaryFormatter Formatter;
+
+        public SongFileNameFormatter(DictionaryFormatter formatter)
         {
-            this.Bob = bob;
+            this.Formatter = formatter;
         }
 
         public SongFileNameFormatter(string format)
         {
-            this.Bob = new NameBuilder(format);
+            this.Formatter = new DictionaryFormatter(format);
         }
 
         public string Format(FileProperties fp)
@@ -26,18 +31,31 @@ namespace MusicSorter2
             string FileName = Path.GetFileName(fp.Path);
             string ext = Path.GetExtension(FileName);
 
-            if ((Bob.RequiresTag("#") && fp.TrackNumber == "") ||
-                (Bob.RequiresTag("T") && fp.Title == "") ||
-                (Bob.RequiresTag("AL") && fp.Album == "") ||
-                (Bob.RequiresTag("AR") && fp.AnyArtist == ""))
+            if (!HasAllRequiredTags(fp))
             {
                 // if the NameBuilder requires any properties that do
                 // not have values for this file, don't change the name.
                 return FileName;
             }
 
-            string NewName = Bob.Build(fp.TrackNumber, fp.Title, fp.Album, fp.AnyArtist);
+            Dictionary<string, object> dict = new Dictionary<string, object>()
+            {
+                { TrackNumberTag, fp.TrackNumber },
+                { TitleTag, fp.Title },
+                { AlbumTag, fp.Album },
+                { ArtistTag, fp.AnyArtist }
+            };
+
+            string NewName = Formatter.Format(dict);
             return (NewName + ext).MakeLegalPath();
+        }
+
+        bool HasAllRequiredTags(FileProperties fp)
+        {
+            return !(Formatter.HasTag(TrackNumberTag) && fp.TrackNumber == "") ||
+                (Formatter.HasTag(TitleTag) && fp.Title == "") ||
+                (Formatter.HasTag(AlbumTag) && fp.Album == "") ||
+                (Formatter.HasTag(ArtistTag) && fp.AnyArtist == "");
         }
     }
 }

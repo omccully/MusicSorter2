@@ -63,6 +63,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Sorter\DictionaryFormatter.cs" />
     <Compile Include="Sorter\FileChangedEventArgs.cs" />
     <Compile Include="Sorter\FileProperties.cs" />
     <Compile Include="Sorter\Interfaces\IFilePropertiesFormatter.cs" />
@@ -82,7 +83,6 @@
     <Compile Include="Views\FormatHelpForm.Designer.cs">
       <DependentUpon>FormatHelpForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Sorter\NameBuilder.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Sorter\Sorter.cs" />

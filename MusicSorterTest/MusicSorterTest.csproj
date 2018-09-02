@@ -49,10 +49,10 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DictionaryFormatterTest.cs" />
     <Compile Include="EventTracker.cs" />
     <Compile Include="FilePropertiesTest.cs" />
     <Compile Include="HelpersTest.cs" />
-    <Compile Include="NameBuilderTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SorterTest.cs" />
   </ItemGroup>
