@@ -86,11 +86,6 @@
             // ModeComboBox
             // 
             this.ModeComboBox.FormattingEnabled = true;
-            this.ModeComboBox.Items.AddRange(new object[] {
-            "Full",
-            "Unpack",
-            "Move",
-            "Rename"});
             this.ModeComboBox.Location = new System.Drawing.Point(122, 49);
             this.ModeComboBox.Name = "ModeComboBox";
             this.ModeComboBox.Size = new System.Drawing.Size(63, 21);
