@@ -15,12 +15,6 @@ namespace MusicSorter2
             Full, Unpack, Move, Rename
         };
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern bool AllocConsole();
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern bool FreeConsole();
-
         SorterMode SelectedSorterMode
         {
             get
@@ -190,11 +184,18 @@ namespace MusicSorter2
             Console.WriteLine("Press ENTER to continue.");
             Console.ReadLine();
             FreeConsole();
+
+            // there's an issue preventing writing to the console
+            // when the sorter is started twice in a row, 
+            // so closing the program after the sorter is finished is 
+            // a quick, easy fix.
+            this.Close();
         }
 
         private void Sorter_FileMoved(object sender, FileChangedEventArgs e)
         {
             Console.WriteLine("Moved " + e.PathA + " -> " + e.PathB);
+           
         }
 
         void Sorter_FileUnpacked(object o, FileChangedEventArgs e)
@@ -228,11 +229,17 @@ namespace MusicSorter2
         /// </summary>
         /// <param name="s">String to be written to console</param>
         /// <param name="cc">Color of the string written to console</param>
-        public static void LogInColor(string s, ConsoleColor cc)
+        void LogInColor(string s, ConsoleColor cc)
         {
             Console.ForegroundColor = cc;
             Console.Write(s);
             Console.ResetColor();
         }
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool AllocConsole();
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool FreeConsole();
     }
 }

@@ -47,9 +47,9 @@
             // 
             // StartBut
             // 
-            this.StartBut.Location = new System.Drawing.Point(50, 191);
+            this.StartBut.Location = new System.Drawing.Point(69, 191);
             this.StartBut.Name = "StartBut";
-            this.StartBut.Size = new System.Drawing.Size(217, 49);
+            this.StartBut.Size = new System.Drawing.Size(231, 49);
             this.StartBut.TabIndex = 0;
             this.StartBut.Text = "Start";
             this.StartBut.UseVisualStyleBackColor = true;
@@ -59,7 +59,7 @@
             // 
             this.FolderBox.Location = new System.Drawing.Point(122, 13);
             this.FolderBox.Name = "FolderBox";
-            this.FolderBox.Size = new System.Drawing.Size(120, 20);
+            this.FolderBox.Size = new System.Drawing.Size(234, 20);
             this.FolderBox.TabIndex = 1;
             this.FolderBox.Text = "C:\\Music\\";
             // 
@@ -75,7 +75,7 @@
             // 
             // BrowseBut
             // 
-            this.BrowseBut.Location = new System.Drawing.Point(248, 12);
+            this.BrowseBut.Location = new System.Drawing.Point(304, 39);
             this.BrowseBut.Name = "BrowseBut";
             this.BrowseBut.Size = new System.Drawing.Size(52, 21);
             this.BrowseBut.TabIndex = 3;
@@ -178,7 +178,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(316, 249);
+            this.ClientSize = new System.Drawing.Size(364, 249);
             this.Controls.Add(this.HelpLabel);
             this.Controls.Add(this.FormatComboBox);
             this.Controls.Add(this.CreatedCheck);
